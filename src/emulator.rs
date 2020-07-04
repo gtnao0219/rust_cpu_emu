@@ -40,4 +40,46 @@ impl Emulator {
         }
         println!("{:?}", self.registers);
     }
+    // getter
+    pub fn get_code8(&self, index: usize) -> u8 {
+        self.memory[(self.eip as usize) + index]
+    }
+    pub fn get_sign_code8(&self, index: usize) -> i8 {
+        self.get_code8(index) as i8
+    }
+    pub fn get_code32(&self, index: usize) -> u32 {
+        let mut ret: u32 = 0;
+        for i in 0..4 {
+            ret |= (self.get_code8(index + i) as u32) << (i * 8)
+        }
+        ret
+    }
+    pub fn get_sign_code32(&self, index: usize) -> i32 {
+        self.get_code32(index) as i32
+    }
+    pub fn get_register32(&self, index: usize) -> u32 {
+        self.registers[index]
+    }
+    pub fn get_memory8(&self, address: usize) -> u8 {
+        self.memory[address]
+    }
+    pub fn get_memory32(&self, address: usize) -> u32 {
+        let mut ret: u32 = 0;
+        for i in 0..4 {
+            ret |= (self.get_memory8(address + i) as u32) << (i * 8)
+        }
+        ret
+    }
+    // setter
+    pub fn set_register_32(&mut self, index: usize, value: u32) {
+        self.registers[index] = value;
+    }
+    pub fn set_memory8(&mut self, address: usize, value: u8) {
+        self.memory[address] = value;
+    }
+    pub fn set_memory32(&mut self, address: usize, value: u32) {
+        for i in 0..4 {
+            self.set_memory8(address + i, (value >> (i * 8)) as u8);
+        }
+    }
 }
