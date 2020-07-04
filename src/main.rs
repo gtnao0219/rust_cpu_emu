@@ -14,10 +14,10 @@ const REGISTERS_COUNT: usize = 8;
 const INSTRUCTIONS_COUNT: usize = 0x100;
 
 fn main() {
-    let mut emu = Emulator::new(MEMORY_SIZE, 0x0000, 0x7C00);
+    let mut emu = Emulator::new(MEMORY_SIZE, 0x7C00, 0x7C00);
     let f = File::open("binary").expect("file not found");
     let mut handle = f.take(0x200);
-    handle.read(&mut emu.memory).expect("file read error");
+    handle.read(&mut emu.memory[0x7C00..]).expect("file read error");
 
     let instructions = init_instructions();
     while (emu.eip as usize) < MEMORY_SIZE {
@@ -61,7 +61,7 @@ fn get_code8(emu: &Emulator, index: usize) -> u8 {
     emu.memory[(emu.eip as usize) + index] as u8
 }
 fn get_sign_code8(emu: &Emulator, index: usize) -> i8 {
-    emu.memory[(emu.eip as usize) + index] as i8
+    get_code8(&emu, index) as i8
 }
 fn get_code32(emu: &Emulator, index: usize) -> u32 {
     let mut ret: u32 = 0;
@@ -69,6 +69,9 @@ fn get_code32(emu: &Emulator, index: usize) -> u32 {
         ret |= (get_code8(emu, index + i) as u32) << (i * 8)
     }
     ret
+}
+fn get_sign_code32(emu: &Emulator, index: usize) -> i32 {
+    get_code32(&emu, index) as i32
 }
 fn mov_r32_imm32(emu: &mut Emulator) -> () {
     let reg = get_code8(emu, 0) - 0xB8;
@@ -80,11 +83,16 @@ fn short_jump(emu: &mut Emulator) -> () {
     let diff = get_sign_code8(&emu, 1);
     emu.eip = ((emu.eip as i32) + (diff as i32) + 2) as u32;
 }
+fn near_jump(emu: &mut Emulator) -> () {
+    let diff = get_sign_code32(&emu, 1);
+    emu.eip = ((emu.eip as i32) + (diff as i32) + 5) as u32;
+}
 fn init_instructions() -> Instructions {
     let mut instructions: Instructions = [noop; INSTRUCTIONS_COUNT];
     for i in 0..8 {
         instructions[0xB8 + i] = mov_r32_imm32;
     }
+    instructions[0xE9] = near_jump;
     instructions[0xEB] = short_jump;
     instructions
 }
